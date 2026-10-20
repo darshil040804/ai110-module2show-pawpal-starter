@@ -4,7 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import time
+from enum import IntEnum
 from typing import Optional
+
+
+class Priority(IntEnum):
+    """Numeric so tasks sort correctly (higher value = more important)."""
+
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
 
 
 @dataclass
@@ -12,9 +21,14 @@ class Task:
     title: str
     category: str = "general"
     duration_minutes: int = 15
-    priority: str = "medium"  # "low" | "medium" | "high"
+    priority: Priority = Priority.MEDIUM
     preferred_time: Optional[time] = None
     completed: bool = False
+    pet_name: str = ""  # set by Pet.add_task so the plan can say who the task is for
+
+    def __post_init__(self) -> None:
+        """Reject invalid data before the scheduler ever sees it."""
+        pass
 
     def mark_complete(self) -> None:
         """Mark this task as done."""
@@ -33,7 +47,7 @@ class Pet:
     tasks: list[Task] = field(default_factory=list)
 
     def add_task(self, task: Task) -> None:
-        """Add a care task to this pet."""
+        """Add a care task to this pet and tag it with this pet's name."""
         pass
 
     def remove_task(self, task: Task) -> None:
@@ -77,7 +91,7 @@ class Scheduler:
         self.explanations: list[str] = []
 
     def generate_plan(self) -> list[Task]:
-        """Build a daily plan from pending tasks within the owner's available time."""
+        """Rebuild plan and explanations from scratch: pending tasks by priority within available time."""
         pass
 
     def explain_plan(self) -> str:

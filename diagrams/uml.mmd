@@ -23,11 +23,19 @@ classDiagram
         +str title
         +str category
         +int duration_minutes
-        +str priority
+        +Priority priority
         +time preferred_time
         +bool completed
+        +str pet_name
         +mark_complete() void
         +edit(**changes) void
+    }
+
+    class Priority {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
     }
 
     class Scheduler {
@@ -40,5 +48,6 @@ classDiagram
 
     Owner "1" o-- "*" Pet : has
     Pet "1" o-- "*" Task : needs
+    Task --> Priority
     Scheduler --> Owner : reads constraints from
     Scheduler ..> Task : selects and orders
