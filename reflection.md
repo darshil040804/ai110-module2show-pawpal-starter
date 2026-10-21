@@ -81,12 +81,12 @@ About 4 out of 5. All 40 tests pass, and they cover both normal use and edge cas
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+I'm most satisfied with how cleanly the classes fit together. Because the Scheduler only reads tasks through `Owner.get_all_tasks()`, adding sorting, filtering, recurring tasks, and conflict detection didn't require changing how `Pet` or `Task` store data. Each new feature was a small, separate method. I'm also happy with the test suite: writing edge-case tests caught two real recurrence bugs that the CLI demo never showed.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+I would make conflict detection check overlapping durations (for example, a 30-minute walk at 07:30 and breakfast at 07:45), not just identical start times. I'd also give the scheduler actual start times for tasks without a preferred time, instead of listing them as "Anytime", possibly with the `ScheduledItem` class I held off on in Phase 1. In the app, I'd add buttons to mark tasks complete and to edit or delete tasks. I'd also save the owner's data to a file so it survives closing the browser, because right now it only lasts for one session.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+Designing the system first made working with AI much more effective. With a clear UML and class responsibilities, I could give the AI specific instructions (like "the Scheduler must read from the Owner, not a single pet") and judge whether its suggestions fit the design. I also learned that AI output still needs verifying: running the demo, reading the code, and especially writing tests were what caught mistakes. Choosing the more readable version over the more "clever" one was my call to make, not the AI's.

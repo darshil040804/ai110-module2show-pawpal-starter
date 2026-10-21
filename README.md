@@ -1,6 +1,6 @@
 # PawPal+ (Module 2 Project)
 
-You are building **PawPal+**, a Streamlit app that helps a pet owner plan care tasks for their pet.
+**PawPal+** is a Streamlit app that helps a pet owner plan daily care tasks for one or more pets. It picks the most important tasks that fit the owner's available time, orders them through the day, flags scheduling conflicts, handles recurring tasks, and explains its choices.
 
 ## Scenario
 
@@ -31,6 +31,25 @@ python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+### Run
+
+```bash
+streamlit run app.py   # the web app
+python main.py         # CLI demo
+python -m pytest       # test suite
+```
+
+### Project structure
+
+| File | Purpose |
+|------|---------|
+| `pawpal_system.py` | Logic layer: `Task`, `Pet`, `Owner`, `Scheduler` |
+| `app.py` | Streamlit UI wired to the logic layer |
+| `main.py` | CLI demo script |
+| `tests/test_pawpal.py` | Automated test suite (40 tests) |
+| `diagrams/uml.mmd` | UML class diagram (Mermaid) |
+| `reflection.md` | Design and AI-collaboration reflection |
 
 ### Suggested workflow
 
@@ -114,10 +133,10 @@ tests\test_pawpal.py ........................................            [100%]
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
-
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+1. **Start the app** with `streamlit run app.py` and open the local URL it prints (usually http://localhost:8501).
+2. **Set up the owner.** In the *Owner* section, enter your name, how many minutes you have for pet care today, and (optionally) your preferred task categories, such as `exercise`. Preferred categories win ties between tasks of equal priority.
+3. **Add your pets.** In the *Pets* section, enter each pet's name, species, and age, then click **Add pet**. The pets table updates right away and shows how many tasks each pet has. Duplicate or blank names are rejected with an error message.
+4. **Add care tasks.** In the *Tasks* section, choose which pet the task is for, then enter a title, duration, category, priority, frequency (`daily`, `weekly`, or `once`), and optionally a preferred time. Click **Add task**. The tasks table lists every task across all pets, sorted by date and time.
+5. **Generate the schedule.** Click **Generate schedule**. PawPal+ picks the highest-priority tasks that fit in your available time and shows a *Daily plan* for each pet in time order.
+6. **Check warnings and reasoning.** If two tasks share the same time slot, a yellow conflict warning appears above the plan. Expand **Why this plan?** to see why each task was scheduled or skipped (for example, "needs 20 min but only 10 min left").
+7. **Try the CLI demo (optional).** Run `python main.py` to see sorting, filtering, conflict detection, and recurring tasks in the terminal.
