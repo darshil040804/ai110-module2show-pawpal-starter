@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import time
+from collections import defaultdict
+from dataclasses import dataclass, field, replace
+from datetime import date, time, timedelta
 from enum import IntEnum
 from typing import Optional
 
@@ -18,6 +19,9 @@ class Priority(IntEnum):
 
 VALID_FREQUENCIES = ("once", "daily", "weekly")
 
+# How far ahead the next occurrence of a recurring task is due.
+RECURRENCE_STEP = {"daily": timedelta(days=1), "weekly": timedelta(weeks=1)}
+
 
 @dataclass
 class Task:
@@ -31,6 +35,7 @@ class Task:
     frequency: str = "daily"
     completed: bool = False
     pet_name: str = ""  # set by Pet.add_task so the plan can say who the task is for
+    due_date: date = field(default_factory=date.today)
 
     def __post_init__(self) -> None:
         """Reject invalid data before the scheduler ever sees it."""
@@ -54,6 +59,13 @@ class Task:
                 raise AttributeError(f"Task has no field '{name}'.")
             setattr(self, name, value)
         self.__post_init__()  # re-validate after changes
+
+    def next_occurrence(self) -> Optional[Task]:
+        """Return a fresh, incomplete copy due one step later, or None for one-off tasks."""
+        step = RECURRENCE_STEP.get(self.frequency)
+        if step is None:
+            return None
+        return replace(self, completed=False, due_date=self.due_date + step)
 
 
 @dataclass
@@ -103,6 +115,10 @@ class Owner:
         """Remove a pet from this owner."""
         self.pets.remove(pet)
 
+    def get_pet(self, name: str) -> Optional[Pet]:
+        """Return the pet with this name, or None if there isn't one."""
+        return next((pet for pet in self.pets if pet.name == name), None)
+
     def get_all_tasks(self) -> list[Task]:
         """Return every task across all of the owner's pets."""
         return [task for pet in self.pets for task in pet.tasks]
@@ -116,24 +132,79 @@ class Scheduler:
         self.plan: list[Task] = []
         self.explanations: list[str] = []
 
-    @staticmethod
-    def _time_sort_key(task: Task) -> time:
-        """Tasks with no preferred time go to the end of the day."""
-        return task.preferred_time or time.max
+    # --- Sorting and filtering ----------------------------------------------
 
-    def generate_plan(self) -> list[Task]:
-        """Rebuild plan and explanations from scratch: pending tasks by priority within available time."""
+    def sort_by_time(self, tasks: Optional[list[Task]] = None) -> list[Task]:
+        """Return tasks ordered by due date, then preferred time; untimed tasks go last each day."""
+        if tasks is None:
+            tasks = self.owner.get_all_tasks()
+        return sorted(tasks, key=lambda t: (t.due_date, t.preferred_time or time.max))
+
+    def filter_tasks(
+        self,
+        pet_name: Optional[str] = None,
+        completed: Optional[bool] = None,
+        due_on: Optional[date] = None,
+    ) -> list[Task]:
+        """Return the owner's tasks matching every filter given (None means "don't filter on this")."""
+        return [
+            task
+            for task in self.owner.get_all_tasks()
+            if (pet_name is None or task.pet_name == pet_name)
+            and (completed is None or task.completed == completed)
+            and (due_on is None or task.due_date == due_on)
+        ]
+
+    # --- Recurring tasks ------------------------------------------------------
+
+    def mark_task_complete(self, task: Task) -> Optional[Task]:
+        """Complete a task and, if it recurs, add its next occurrence to the same pet."""
+        task.mark_complete()
+        upcoming = task.next_occurrence()
+        if upcoming is not None:
+            pet = self.owner.get_pet(task.pet_name)
+            if pet is None:
+                raise ValueError(f"No pet named '{task.pet_name}' to attach the next occurrence to.")
+            pet.add_task(upcoming)
+        return upcoming
+
+    # --- Conflict detection ---------------------------------------------------
+
+    def detect_conflicts(self, tasks: Optional[list[Task]] = None) -> list[str]:
+        """Return a warning for each time slot shared by two or more pending tasks (exact start-time match)."""
+        if tasks is None:
+            tasks = self.filter_tasks(completed=False)
+
+        slots: dict[tuple[date, time], list[Task]] = defaultdict(list)
+        for task in tasks:
+            if task.preferred_time is not None:
+                slots[(task.due_date, task.preferred_time)].append(task)
+
+        warnings = []
+        for (day, at), clashing in sorted(slots.items()):
+            if len(clashing) > 1:
+                names = ", ".join(f"{t.title} ({t.pet_name})" for t in clashing)
+                warnings.append(f"Conflict on {day} at {at.strftime('%H:%M')}: {names}")
+        return warnings
+
+    # --- Planning ---------------------------------------------------------------
+
+    def generate_plan(self, day: Optional[date] = None) -> list[Task]:
+        """Rebuild plan and explanations from scratch: pending tasks due by `day`, by priority, within available time."""
+        day = day or date.today()
         self.plan = []
         self.explanations = []
 
         # Read across every pet via the Owner, not from a single pet.
-        pending = [task for task in self.owner.get_all_tasks() if not task.completed]
+        pending = [
+            task for task in self.owner.get_all_tasks()
+            if not task.completed and task.due_date <= day
+        ]
 
-        # Highest priority first; preferred categories break ties, then earlier time, then shorter.
         def selection_key(task: Task):
             """Sort key: priority, then preference match, then time, then duration."""
             preferred = task.category in self.owner.preferences
-            return (-task.priority, not preferred, self._time_sort_key(task), task.duration_minutes)
+            return (-task.priority, not preferred, task.preferred_time or time.max, task.duration_minutes)
 
         remaining = self.owner.available_minutes
         for task in sorted(pending, key=selection_key):
@@ -144,6 +215,8 @@ class Scheduler:
                 reason = f"priority {task.priority.name.lower()}"
                 if task.category in self.owner.preferences:
                     reason += f", matches preference '{task.category}'"
+                if task.due_date < day:
+                    reason += f", overdue since {task.due_date}"
                 self.explanations.append(
                     f"Scheduled {label}: {reason}, {task.duration_minutes} min "
                     f"({remaining} min left)."
@@ -155,7 +228,8 @@ class Scheduler:
                 )
 
         # Present the chosen tasks in the order they happen during the day.
-        self.plan.sort(key=self._time_sort_key)
+        self.plan = self.sort_by_time(self.plan)
+        self.explanations.extend(f"Warning: {w}" for w in self.detect_conflicts(self.plan))
         return self.plan
 
     def explain_plan(self) -> str:

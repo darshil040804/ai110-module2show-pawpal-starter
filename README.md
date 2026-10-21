@@ -80,23 +80,22 @@ pytest --cov
 Sample test output:
 
 ```
-collected 2 items
+collected 10 items
 
-tests\test_pawpal.py ..                                                  [100%]
+tests\test_pawpal.py ..........                                          [100%]
 
-============================== 2 passed in 0.12s ==============================
+============================== 10 passed in 0.03s ==============================
 ```
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
-
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `Scheduler.sort_by_time()` | Orders tasks by due date, then preferred time, using `sorted()` with a lambda key. Tasks with no preferred time go last. `generate_plan()` uses it to show the final plan in time order. |
+| Priority selection | `Scheduler.generate_plan()` | Picks pending tasks due today (or overdue) by priority. Ties go to the owner's preferred categories, then earlier time, then shorter duration. Tasks that don't fit in the remaining minutes are skipped and explained. |
+| Filtering | `Scheduler.filter_tasks(pet_name=, completed=, due_on=)` | Returns tasks that match every filter given. Leave a filter out to ignore it, e.g. `filter_tasks(pet_name="Luna", completed=False)`. |
+| Conflict handling | `Scheduler.detect_conflicts()` | Groups pending tasks by (due date, start time) and returns one warning string per shared slot instead of raising an error. Only exact start-time matches count, not overlapping durations. The app shows these as warnings above the schedule. |
+| Recurring tasks | `Scheduler.mark_task_complete()`, `Task.next_occurrence()` | Completing a `daily` or `weekly` task adds a fresh copy to the same pet, due `timedelta(days=1)` or `timedelta(weeks=1)` later. `once` tasks don't recur. Future occurrences stay out of today's plan. |
 
 ## 📸 Demo Walkthrough
 

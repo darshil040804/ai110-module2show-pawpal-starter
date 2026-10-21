@@ -35,13 +35,13 @@ I considered adding a `ScheduledItem` class (task, start time, reason) but held 
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+The scheduler considers, in order: **due date** (only tasks due today or overdue), **priority**, the owner's **preferred categories** (as a tie-breaker), **preferred time**, and **duration**, all within the owner's **available minutes**. Priority comes first because missing a high-priority task (feeding, medication) matters more to a pet's wellbeing than missing a low-priority one (grooming). The time budget is a hard limit because it reflects the owner's real day.
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+**Conflict detection only checks exact start-time matches, not overlapping durations.** Two tasks at 08:00 get a warning, but a 30-minute walk at 07:30 and breakfast at 07:45 do not, even though they overlap. I accepted this because it keeps `detect_conflicts()` simple (group tasks by time slot, flag any slot with more than one task), and in practice pet owners usually set tasks at round, distinct times. The method also returns warnings instead of raising errors, because a clash is something the owner should know about, not something that should stop the app. They may be walking one pet while the other eats.
+
+A second tradeoff: **task selection is greedy.** The scheduler takes the highest-priority tasks first until time runs out. It doesn't search for the combination that fills the time budget best, so it can leave a few minutes unused. For a daily pet-care plan, "do the most important things first" is easier to understand and explain than an optimal packing.
 
 ---
 
@@ -56,6 +56,7 @@ I used an AI coding assistant (Claude Code) to turn my class skeleton into a wor
 - **What it suggested:** a `Scheduler` that selects pending tasks by priority (using owner preferences, time, and duration as tie-breakers) until the time budget runs out, then lists them in time order. It also added a `frequency` field to `Task`, because the assignment asks for one and my skeleton didn't have it.
 - **What I accepted:** the scheduling approach and the `frequency` field (I updated the UML to match).
 - **What I rejected or changed:** the first version of `main.py` printed a single table of all tasks followed by a "Why this plan" list. That wasn't the format I wanted, so I asked for the per-pet "Daily plan for ..." layout shown in the README instead. The em dash in that format also came out garbled in the Windows terminal, which led to a fix that forces UTF-8 output.
+- **Readability vs. "Pythonic":** when I asked how `detect_conflicts()` could be simplified, the AI offered a shorter version that sorts the tasks and uses `itertools.groupby` with a walrus operator inside a single list comprehension. It was more compact, but harder to read at a glance, and it only works if the tasks are sorted first. I kept the `defaultdict` version: build a dict of time slot → tasks, then report any slot with more than one task. Both run in about the same time (O(n), plus sorting the slots), so readability decided it.
 - **How I verified it:** I ran `python main.py` and checked that the plan made sense by hand. The 90-minute budget fit four tasks (80 minutes), and the 20-minute low-priority "Brush coat" was correctly skipped. I also ran `python -m pytest` and confirmed both tests pass.
 
 ---
