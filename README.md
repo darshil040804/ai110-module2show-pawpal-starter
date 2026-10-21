@@ -42,16 +42,29 @@ pip install -r requirements.txt
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
 
+## 🛠️ Implementation Summary
+
+The logic layer lives in `pawpal_system.py` and is made of four classes:
+
+- **`Task`**: one care activity (title, category, duration, priority, preferred time, frequency, completed). It validates its own data on creation and can mark itself complete or apply edits.
+- **`Pet`**: a pet's profile plus its list of tasks. `add_task` tags each task with the pet's name so the plan can say who a task is for.
+- **`Owner`**: the user's name, daily time budget (`available_minutes`), preferred categories, and pets. `get_all_tasks()` returns every pet's tasks in one list.
+- **`Scheduler`**: the planner. `generate_plan()` reads tasks from `Owner.get_all_tasks()` (so it covers every pet), drops completed ones, picks tasks by priority (ties go to preferred categories, then earlier time, then shorter tasks) until the time budget runs out, and returns the chosen tasks in time order. `explain_plan()` says why each task was scheduled or skipped.
+
+`main.py` is a CLI demo that builds an owner with two pets and prints today's schedule. Run it with `python main.py`.
+
 ## 🖥️ Sample Output
 
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
+Output of `python main.py`:
 
 ```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+Daily plan for Mochi (Dog):
+  07:30 — Morning walk (30 min) [priority: high]
+  18:00 — Evening walk (30 min) [priority: medium]
+
+Daily plan for Luna (Cat):
+  08:00 — Breakfast (10 min) [priority: high]
+  12:00 — Litter box (10 min) [priority: medium]
 ```
 
 ## 🧪 Testing PawPal+
@@ -67,7 +80,11 @@ pytest --cov
 Sample test output:
 
 ```
-# Paste your pytest output here
+collected 2 items
+
+tests\test_pawpal.py ..                                                  [100%]
+
+============================== 2 passed in 0.12s ==============================
 ```
 
 ## 📐 Smarter Scheduling

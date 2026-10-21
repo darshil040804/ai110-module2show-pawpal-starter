@@ -49,13 +49,14 @@ I considered adding a `ScheduledItem` class (task, start time, reason) but held 
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+I used an AI coding assistant (Claude Code) to turn my class skeleton into a working implementation, write a CLI demo (`main.py`), draft the first pytest tests, and add docstrings. The most helpful prompts were specific about requirements: for example, telling it the `Scheduler` had to read tasks through `Owner.get_all_tasks()` rather than from a single pet, and pasting the exact output format I wanted from the README.
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+- **What it suggested:** a `Scheduler` that selects pending tasks by priority (using owner preferences, time, and duration as tie-breakers) until the time budget runs out, then lists them in time order. It also added a `frequency` field to `Task`, because the assignment asks for one and my skeleton didn't have it.
+- **What I accepted:** the scheduling approach and the `frequency` field (I updated the UML to match).
+- **What I rejected or changed:** the first version of `main.py` printed a single table of all tasks followed by a "Why this plan" list. That wasn't the format I wanted, so I asked for the per-pet "Daily plan for ..." layout shown in the README instead. The em dash in that format also came out garbled in the Windows terminal, which led to a fix that forces UTF-8 output.
+- **How I verified it:** I ran `python main.py` and checked that the plan made sense by hand. The 90-minute budget fit four tasks (80 minutes), and the 20-minute low-priority "Brush coat" was correctly skipped. I also ran `python -m pytest` and confirmed both tests pass.
 
 ---
 
@@ -63,8 +64,10 @@ I considered adding a `ScheduledItem` class (task, start time, reason) but held 
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+- `mark_complete()` changes a task's `completed` flag from `False` to `True`.
+- `Pet.add_task()` increases the pet's task count and tags the task with the pet's name.
+
+These are the building blocks the scheduler relies on: it filters out completed tasks and uses `pet_name` to show which pet each task belongs to.
 
 **b. Confidence**
 
