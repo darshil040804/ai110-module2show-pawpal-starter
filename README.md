@@ -69,23 +69,36 @@ Daily plan for Luna (Cat):
 
 ## 🧪 Testing PawPal+
 
+Run the full test suite from the project root:
+
 ```bash
-# Run the full test suite:
-pytest
-
-# Run with coverage:
-pytest --cov
+python -m pytest
 ```
 
-Sample test output:
+The 40 tests in `tests/test_pawpal.py` cover:
+
+- **Task and pet basics:** marking tasks complete, adding tasks to a pet, rejecting invalid data (blank title, non-positive duration, unknown frequency or priority), and `edit()` re-validating its changes.
+- **Sorting:** `sort_by_time()` returns tasks in chronological order, sorts by day before time, puts untimed tasks last, keeps insertion order for ties, and doesn't modify the input list.
+- **Filtering:** by pet, by completion status, by both, with an unknown pet name, and with no filters.
+- **Recurring tasks:** completing a daily task creates one due tomorrow, weekly tasks come back in 7 days, one-off tasks don't recur, completing a task twice doesn't create duplicates, overdue tasks recur from today, and the next occurrence stays out of today's plan but appears in tomorrow's.
+- **Conflict detection:** flags duplicate times across pets and within one pet. Completed tasks, untimed tasks, and the same time on different days are ignored.
+- **Plan generation:** stays within the time budget, picks higher priority first, breaks ties with the owner's preferences, includes overdue tasks, returns the plan in time order, and handles empty cases (no pets, a pet with no tasks, zero minutes available).
+
+Output of a successful run:
 
 ```
-collected 10 items
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\codepath\ai110-module2show-pawpal-starter
+plugins: anyio-4.14.1
+collected 40 items
 
-tests\test_pawpal.py ..........                                          [100%]
+tests\test_pawpal.py ........................................            [100%]
 
-============================== 10 passed in 0.03s ==============================
+============================= 40 passed in 0.09s ==============================
 ```
+
+**Confidence Level: ★★★★☆ (4/5).** Every core behavior and the edge cases I could think of are tested and pass. Writing these tests also caught two real bugs in recurrence: completing a task twice created duplicate occurrences, and overdue tasks recurred into the past. It isn't 5 stars because conflict detection only catches exact start-time matches (not overlapping durations), and the Streamlit UI is only checked by hand.
 
 ## 📐 Smarter Scheduling
 

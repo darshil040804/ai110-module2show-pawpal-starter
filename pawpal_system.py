@@ -61,11 +61,13 @@ class Task:
         self.__post_init__()  # re-validate after changes
 
     def next_occurrence(self) -> Optional[Task]:
-        """Return a fresh, incomplete copy due one step later, or None for one-off tasks."""
+        """Return a fresh, incomplete copy due one step after today (or after its due date if that's later), or None for one-off tasks."""
         step = RECURRENCE_STEP.get(self.frequency)
         if step is None:
             return None
-        return replace(self, completed=False, due_date=self.due_date + step)
+        # Counting from today stops an overdue task from spawning another overdue copy.
+        start = max(self.due_date, date.today())
+        return replace(self, completed=False, due_date=start + step)
 
 
 @dataclass
@@ -158,7 +160,9 @@ class Scheduler:
     # --- Recurring tasks ------------------------------------------------------
 
     def mark_task_complete(self, task: Task) -> Optional[Task]:
-        """Complete a task and, if it recurs, add its next occurrence to the same pet."""
+        """Complete a task and, if it recurs, add its next occurrence to the same pet (only once)."""
+        if task.completed:
+            return None  # already handled; don't spawn a duplicate occurrence
         task.mark_complete()
         upcoming = task.next_occurrence()
         if upcoming is not None:

@@ -6,6 +6,7 @@ classDiagram
         +list~Pet~ pets
         +add_pet(pet) void
         +remove_pet(pet) void
+        +get_pet(name) Pet
         +get_all_tasks() list~Task~
     }
 
@@ -28,8 +29,10 @@ classDiagram
         +str frequency
         +bool completed
         +str pet_name
+        +date due_date
         +mark_complete() void
         +edit(**changes) void
+        +next_occurrence() Task
     }
 
     class Priority {
@@ -43,7 +46,11 @@ classDiagram
         +Owner owner
         +list~Task~ plan
         +list~str~ explanations
-        +generate_plan() list~Task~
+        +sort_by_time(tasks) list~Task~
+        +filter_tasks(pet_name, completed, due_on) list~Task~
+        +mark_task_complete(task) Task
+        +detect_conflicts(tasks) list~str~
+        +generate_plan(day) list~Task~
         +explain_plan() str
     }
 

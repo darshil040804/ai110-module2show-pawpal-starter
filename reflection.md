@@ -65,15 +65,15 @@ I used an AI coding assistant (Claude Code) to turn my class skeleton into a wor
 
 **a. What you tested**
 
-- `mark_complete()` changes a task's `completed` flag from `False` to `True`.
-- `Pet.add_task()` increases the pet's task count and tags the task with the pet's name.
+The suite has 40 tests covering task/pet basics and validation, sorting (chronological order, day before time, untimed last, ties), filtering, recurring tasks, conflict detection, and plan generation (time budget, priority, preferences, overdue tasks, and empty cases like an owner with no pets or a pet with no tasks). These matter because the plan is only as trustworthy as the pieces it's built from: if sorting, recurrence, or filtering is wrong, the schedule silently shows the wrong tasks.
 
-These are the building blocks the scheduler relies on: it filters out completed tasks and uses `pet_name` to show which pet each task belongs to.
+The edge-case tests found two real bugs, both in `pawpal_system.py` and not in the tests themselves:
+1. Calling `mark_task_complete()` twice on the same task created two "next" occurrences. Fixed by returning early if the task is already complete.
+2. An overdue daily task recurred from its old due date, so a task three days late produced a new task that was still overdue. Fixed by counting the next occurrence from today (or the due date, if that's later).
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+About 4 out of 5. All 40 tests pass, and they cover both normal use and edge cases. Next I would test overlapping durations (once conflict detection supports them), very large task lists, and editing a recurring task after its next occurrence already exists. I would also add automated tests for the Streamlit UI using `streamlit.testing.v1.AppTest`.
 
 ---
 
